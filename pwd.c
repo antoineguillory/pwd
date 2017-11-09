@@ -26,19 +26,18 @@ bool is_root(void);
 int main(void){
     char* pwd_str = malloc(2);
     char* pwd_next = malloc(2);
-    DIR *dir;
     do{
-        if ((dir = opendir ("..")) == NULL) {
-            perror ("Cannot open ..");
-            exit (EXIT_FAILURE);
-        }
         pwd_next = find_next_step(find_inode_currdir(), pwd_str);
-        strcat(strcat(pwd_next, "/"), pwd_str);
+        char* tmp_pwd = malloc(strlen(pwd_next)+2); // "/" et le \0
+        strcpy(tmp_pwd, pwd_next);
+        strcat(tmp_pwd, "/");
+        strcat(pwd_str, tmp_pwd);
+        
+        chdir(PRED_DIR);
         printf("DEBUG : NEXT DIR IS %s\n", pwd_next);
         printf("DEBUG : PWD STATE : %s\n", pwd_str);
-        
+        free(tmp_pwd);
     }while(strcmp(pwd_str,pwd_next)!=0);
-    closedir(dir);
     printf("%s\n", pwd_str);
     
     return 0;
