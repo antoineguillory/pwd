@@ -32,7 +32,6 @@ int main(void){
         strcpy(tmp_pwd, pwd_next);
         strcat(tmp_pwd, "/");
         strcat(pwd_str, tmp_pwd);
-        
         chdir(PRED_DIR);
         printf("DEBUG : NEXT DIR IS %s\n", pwd_next);
         printf("DEBUG : PWD STATE : %s\n", pwd_str);
@@ -40,7 +39,7 @@ int main(void){
     }while(strcmp(pwd_str,pwd_next)!=0);
     printf("%s\n", pwd_str);
     
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 ino_t find_inode_currdir() {
@@ -76,7 +75,7 @@ char * find_next_step(ino_t inode_curr, char* pwd){
     }
     DIR *dir;
     struct dirent *dp;
-    if ((dir = opendir ("..")) == NULL) {
+    if ((dir = opendir (PRED_DIR) == NULL) {
         perror ("Cannot open ..");
         exit (EXIT_FAILURE);
     }
