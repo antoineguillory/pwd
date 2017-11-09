@@ -18,8 +18,8 @@
 
 typedef int file_descriptor_t;
 
-ino_t find_inode_currdir();
-ino_t find_inode(char* name);
+ino_t  find_inode_currdir();
+ino_t  find_inode(char* name);
 char * find_next_step(ino_t inode_curr, char* pwd);
 bool is_root(void);
 
@@ -31,7 +31,10 @@ int main(void){
         char* tmp_pwd = malloc(strlen(pwd_next)+2); // "/" et le \0
         strcpy(tmp_pwd, pwd_next);
         strcat(tmp_pwd, "/");
-        strcat(pwd_str, tmp_pwd);
+        strcat(tmp_pwd, pwd_str);
+        free(pwd_str);
+        pwd_str = malloc(strlen(tmp_pwd)+1);
+        strcpy(pwd_str, tmp_pwd);
         chdir(PRED_DIR);
         printf("DEBUG : NEXT DIR IS %s\n", pwd_next);
         printf("DEBUG : PWD STATE : %s\n", pwd_str);
@@ -75,20 +78,30 @@ char * find_next_step(ino_t inode_curr, char* pwd){
     }
     DIR *dir;
     struct dirent *dp;
-    if ((dir = opendir (PRED_DIR) == NULL) {
+    if ((dir = opendir (PRED_DIR)) == NULL) {
         perror ("Cannot open ..");
         exit (EXIT_FAILURE);
     }
 
     while ((dp = readdir(dir)) != NULL) {
+        /*Pour des raisons que j'ignore, l'inode contenue dans dp
+         * est parfois érronée. Il faut donc refaire un stat sur l'inode donnée
+         * pour récupérer la "vraie" valeur
+         */
+         //TODO
+         
+         //amelioration possible comparer les disques ....
         if((ino_t)dp->d_ino==inode_curr){
             closedir(dir);
             printf("DEBUG : dp is : %s\n", dp->d_name);
             return dp->d_name;
         }
     }
-    
     exit(EXIT_FAILURE);
+}
+
+ino_t get_real_inode(ino_t incorrect_inode) {
+    //TODO
 }
 
 bool is_root(void){
