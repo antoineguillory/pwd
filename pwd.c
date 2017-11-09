@@ -20,6 +20,7 @@ typedef int file_descriptor_t;
 
 ino_t  find_inode_currdir();
 ino_t  find_inode(char* name);
+ino_t get_real_inode(ino_t incorrect_inode);
 char * find_next_step(ino_t inode_curr, char* pwd);
 bool is_root(void);
 
