@@ -1,49 +1,48 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdbool.h>
-#include <time.h>
-#include <pwd.h>
 #include <dirent.h>
-#include <grp.h>
-#include <libgen.h>
-
 
 #define CURRENT_DIR "."
-#define PRED_DIR ".."
+#define PRED_DIR    ".."
+#define ROOT        "/"
 
 typedef int file_descriptor_t;
 
 ino_t  find_inode_currdir();
-ino_t  find_inode(char* name);
-ino_t get_real_inode(ino_t incorrect_inode);
-char * find_next_step(ino_t inode_curr, char* pwd);
-bool is_root(void);
+ino_t  find_inode        (char* name);
+char * find_next_step    (ino_t inode_curr, char* pwd);
+bool   is_root           (void);
+char * concat_with_root  (char * str1, char* str2);
 
 int main(void){
-    char* pwd_str = malloc(2);
-    char* pwd_next = malloc(2);
-    do{
+    char* pwd_str  = malloc(1);
+    char* pwd_next = NULL;
+    do {
         pwd_next = find_next_step(find_inode_currdir(), pwd_str);
-        char* tmp_pwd = malloc(strlen(pwd_next)+2); // "/" et le \0
-        strcpy(tmp_pwd, pwd_next);
-        strcat(tmp_pwd, "/");
-        strcat(tmp_pwd, pwd_str);
+        if(pwd_next == NULL) break;
+        char* tmp_pwd = malloc(strlen(pwd_next) + 2); // "/" et le \0
+        tmp_pwd = concat_with_root(pwd_str, pwd_next);
         free(pwd_str);
         pwd_str = malloc(strlen(tmp_pwd)+1);
         strcpy(pwd_str, tmp_pwd);
         chdir(PRED_DIR);
-        printf("DEBUG : NEXT DIR IS %s\n", pwd_next);
-        printf("DEBUG : PWD STATE : %s\n", pwd_str);
         free(tmp_pwd);
-    }while(strcmp(pwd_str,pwd_next)!=0);
+    } while(strcmp(pwd_str, pwd_next) != 0);
     printf("%s\n", pwd_str);
-    
     return EXIT_SUCCESS;
+}
+
+char * concat_with_root (char * str1, char* str2) {
+    char* tmp = malloc(strlen(str2) + 2); // "/" et le \0
+    strcpy(tmp, str2);
+    strcat(tmp, ROOT);
+    strcat(tmp, str1);
+    return tmp;
 }
 
 ino_t find_inode_currdir() {
@@ -52,25 +51,12 @@ ino_t find_inode_currdir() {
 
 ino_t find_inode(char* name) {
     struct stat fd_stat;
-    
-    file_descriptor_t fd = open(name, O_RDONLY);
-    if (fd < 0) {
-        perror("open");
-        exit(EXIT_FAILURE);
-    }
-    int ret_val = fstat(fd, &fd_stat);
-    if (ret_val < 0) {  
+    int ret_val = stat(name, &fd_stat);
+    if (ret_val < 0) {
         perror("fstat");
         exit(EXIT_FAILURE);
     }
-    
-    ret_val = close(fd);
-    if (ret_val < 0) {  
-        perror("close");
-        exit(EXIT_FAILURE);
-    }
-    
-    return (ino_t) fd_stat.st_ino;
+    return fd_stat.st_ino;
 }
 
 char * find_next_step(ino_t inode_curr, char* pwd){
@@ -85,29 +71,15 @@ char * find_next_step(ino_t inode_curr, char* pwd){
     }
 
     while ((dp = readdir(dir)) != NULL) {
-        /*Pour des raisons que j'ignore, l'inode contenue dans dp
-         * est parfois érronée. Il faut donc refaire un stat sur l'inode donnée
-         * pour récupérer la "vraie" valeur
-         */
-         //TODO
-         
-         //amelioration possible comparer les disques ....
-        if((ino_t)dp->d_ino==inode_curr){
+        if(dp->d_ino==inode_curr){
             closedir(dir);
-            printf("DEBUG : dp is : %s\n", dp->d_name);
             return dp->d_name;
         }
     }
-    exit(EXIT_FAILURE);
+    return NULL;
 }
 
-ino_t get_real_inode(ino_t incorrect_inode) {
-    //TODO
-}
 
 bool is_root(void){
-    if (find_inode_currdir() == find_inode(PRED_DIR)){
-        return true;
-    }
-    return false;
+    return (find_inode_currdir() == find_inode(PRED_DIR));
 }
